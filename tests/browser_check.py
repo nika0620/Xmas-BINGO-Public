@@ -1,6 +1,15 @@
-import functools, http.server, threading, subprocess, tempfile, pathlib, sys
+import functools, http.server, threading, subprocess, tempfile, pathlib, sys, time
+sys.stdout.reconfigure(encoding="utf-8")
 root=pathlib.Path(__file__).resolve().parent.parent
-server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(http.server.SimpleHTTPRequestHandler,directory=str(root)))
+class Handler(http.server.SimpleHTTPRequestHandler):
+ def do_GET(self):
+  if self.path=='/__test_tick':
+   time.sleep(0.01)
+   self.send_response(204)
+   self.end_headers()
+  else: super().do_GET()
+ def log_message(self,*args): pass
+server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(Handler,directory=str(root)))
 threading.Thread(target=server.serve_forever,daemon=True).start()
 with tempfile.TemporaryDirectory(prefix='bingo-browser-') as profile:
  result=subprocess.run([r'C:\Program Files\Google\Chrome\Application\chrome.exe','--headless','--disable-gpu','--no-first-run','--no-default-browser-check','--user-data-dir='+profile,'--dump-dom','--virtual-time-budget=20000',f'http://127.0.0.1:{server.server_port}/tests/browser.html'],capture_output=True,text=True,encoding='utf-8',timeout=60)
