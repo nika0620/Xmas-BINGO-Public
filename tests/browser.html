@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Browser integration tests</title><pre id="output">RUNNING</pre><iframe id="app" src="../index.html"></iframe><script>
+(async()=>{
+const output=document.querySelector('#output'),frame=document.querySelector('#app');
+const results=[];
+const check=(condition,name)=>{if(!condition)throw Error(name);results.push('PASS '+name);};
+const wait=async(fn)=>{for(let i=0;i<500;i++){if(fn())return;await new Promise(r=>setTimeout(r,20));}throw Error('Timed out: '+fn);};
+try{
+await wait(()=>frame.contentWindow.Bingo&&frame.contentDocument.querySelector('#fast').onclick!==undefined&&frame.contentDocument.querySelector('#preview').children.length>0);
+const w=frame.contentWindow,d=w.document,$=id=>d.getElementById(id),form=$('settings');w.localStorage.removeItem('xmas-bingo-history-v1');
+const input=(name,val)=>{form.elements[name].value=val;form.elements[name].dispatchEvent(new w.Event('input',{bubbles:true}));};
+$('preset').value='90';$('preset').dispatchEvent(new w.Event('input',{bubbles:true}));$('preset').dispatchEvent(new w.Event('change',{bubbles:true}));check(form.elements.ballCount.value==='90','90球プリセットの反映');
+$('preset').value='75';$('preset').dispatchEvent(new w.Event('input',{bubbles:true}));$('preset').dispatchEvent(new w.Event('change',{bubbles:true}));check(form.elements.ballCount.value==='75','75球プリセットの反映');
+check($('preview').children.length===30,'プレビューに25マスと5列の見出し');check($('preview').children[17].textContent==='FREE','中央FREE表示');
+input('trials',2);input('participants',3);$('fast').click();await wait(()=>$('status').textContent.includes('完了しました'));check(JSON.parse(w.localStorage.getItem('xmas-bingo-history-v1'))[0].settings.columnRanges,'列ONのWorker計算');w.localStorage.removeItem('xmas-bingo-history-v1');
+input('ballCount',24);check($('fast').disabled&&$('errors').textContent.includes('O列'),'24球・列ONは開始不可');
+$('columnRanges').click();check(!$('fast').disabled,'24球・列OFFは開始可能');
+input('ballCount',90);input('participants',5);input('trials',3);input('duration',2);input('drawInterval',1);input('awardSeconds',0);
+$('fast').click();await wait(()=>$('status').textContent.includes('完了しました'));
+check($('result').querySelectorAll('.metric').length===4,'高速結果の4指標');
+let records=JSON.parse(w.localStorage.getItem('xmas-bingo-history-v1'));check(records.length===1&&records[0].settings.ballCount===90&&!records[0].settings.columnRanges,'履歴に90球・列OFFを保存');
+$('history').querySelector('button').click();check($('detail').open&&$('detailContent').textContent.includes('90'),'履歴詳細');
+$('restore').click();check(form.elements.ballCount.value==='90'&&!$('columnRanges').checked,'履歴から設定復元');
+input('ballCount',24);$('animate').click();$('pause').click();check($('pause').textContent==='再開','一時停止');$('pause').click();$('speed').value='20';await wait(()=>$('status').textContent.includes('アニメーションが完了しました'));
+check($('drawn').textContent.split(' ・ ').length===24,'アニメーションで全球24球を重複なく抽選');check(new Set($('drawn').textContent.split(' ・ ')).size===24,'再生抽選の重複なし');check($('liveCard').children[17].textContent==='FREE','再生カードのFREE');
+const checks=$('history').querySelectorAll('input');checks.forEach(x=>x.click());check($('comparison').textContent.includes('90')&&$('comparison').textContent.includes('24')&&$('comparison').textContent.includes('自由配置'),'履歴比較に球数と方式');
+input('trials',100000);$('fast').click();$('cancel').click();check($('status').textContent.includes('キャンセル')&&!$('fast').disabled,'Workerキャンセルで設定を再編集可能');check(JSON.parse(w.localStorage.getItem('xmas-bingo-history-v1')).length===2,'キャンセルした履歴は保存しない');
+const oldTheme=d.body.classList.contains('light');$('theme').click();check(d.body.classList.contains('light')!==oldTheme,'テーマ切替');
+frame.style.width='375px';await new Promise(r=>setTimeout(r,50));check(d.documentElement.scrollWidth<=frame.clientWidth,'375px幅で画面の横はみ出しなし');
+output.textContent=results.join('\n')+'\nALL PASSED ('+results.length+')';
+}catch(e){output.textContent=results.join('\n')+'\nFAIL '+e.stack;}
+})();
+</script>
