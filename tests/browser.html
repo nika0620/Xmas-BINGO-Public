@@ -8,6 +8,16 @@ try{
 await wait(()=>frame.contentWindow.Bingo&&frame.contentDocument.querySelector('#fast').onclick!==undefined&&frame.contentDocument.querySelector('#preview').children.length>0);
 const w=frame.contentWindow,d=w.document,$=id=>d.getElementById(id),form=$('settings');w.localStorage.removeItem('xmas-bingo-history-v1');
 check(form.elements.prizes.disabled,'景品数未定モードは個数上限入力を無効化');check($('prizesField').classList.contains('inactive-field')&&!$('prizesInactive').hidden&&$('prizesHelp').textContent.includes('使いません'),'無効バッジ・背景・理由を表示');$('estimatePrizes').click();check(!form.elements.prizes.disabled&&$('prizesInactive').hidden&&!$('prizesField').classList.contains('inactive-field'),'景品数指定モードへ切替');$('estimatePrizes').click();
+$('modeTheory').click();check($('simulator').hidden&&!$('theory').hidden,'理論値モードへ切替');
+check($('theoryTable').querySelectorAll('tbody tr').length===21,'理論値は10〜30回の21行');
+check($('theoryTable').querySelector('tbody td').textContent==='2.2人'&&$('theoryTable').querySelector('tbody tr:last-child td:last-child').textContent==='7.2人','理論値の提示表と一致');
+check(!$('theoryCsv').disabled,'理論値CSVを保存可能');
+$('theoryParticipants').value='100';$('theoryParticipants').dispatchEvent(new w.Event('input',{bubbles:true}));check($('theoryCsv').disabled,'設定変更後に古いCSVを保存しない');
+$('theoryForm').requestSubmit();check($('theoryTable').querySelector('tbody td').textContent==='4.5人','参加人数の変更が理論値へ反映');
+$('theoryBalls').value='23';$('theoryForm').requestSubmit();check($('theoryErrors').textContent.includes('24')&&$('theoryCsv').disabled,'理論値の不正な球数を日本語で拒否');
+$('theoryBalls').value='30,35,40,45,50,60,75';$('theoryParticipants').value='50';$('theoryForm').requestSubmit();
+frame.style.width='375px';await new Promise(r=>setTimeout(r,50));check(d.documentElement.scrollWidth<=frame.clientWidth,'理論値表も375px幅で画面が横にはみ出さない');
+$('modeSimulation').click();check(!$('simulator').hidden&&$('theory').hidden,'大会シミュレーションへ戻れる');
 const input=(name,val)=>{form.elements[name].value=val;form.elements[name].dispatchEvent(new w.Event('input',{bubbles:true}));};
 $('preset').value='90';$('preset').dispatchEvent(new w.Event('input',{bubbles:true}));$('preset').dispatchEvent(new w.Event('change',{bubbles:true}));check(form.elements.ballCount.value==='90','90球プリセットの反映');
 $('preset').value='75';$('preset').dispatchEvent(new w.Event('input',{bubbles:true}));$('preset').dispatchEvent(new w.Event('change',{bubbles:true}));check(form.elements.ballCount.value==='75','75球プリセットの反映');

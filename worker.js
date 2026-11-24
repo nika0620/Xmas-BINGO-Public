@@ -1,4 +1,4 @@
-importScripts('engine.js?v=20261123-rank1');
+importScripts('engine.js?v=20261124-theory1');
 self.onmessage = ({data}) => {
  const {settings,runId}=data;
  try {
